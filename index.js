@@ -36,3 +36,27 @@ app.get('/users/:userId/account', async function(req, res) {
       account,
     });
   });
+
+
+app.get('/promotions/:promotionId', async function(req, res) {
+    const promotionId = req.params.promotionId;
+    const promotion = await models.Promotion.findByPk(promotionId); 
+    res.send({
+        name: promotion.name,
+        price: promotion.price,
+    })
+});
+
+app.get('/users/:userId/promotions', async function(req, res) {
+    //get all the promotions of a user
+    const userId = req.params.userId;
+    const user = await models.User.findByPk(userId);
+    const promotions = await user.getPromotions();
+    const countProm = await user.countPromotions();
+
+    res.send({
+        noOfPromotions: countProm,
+        promotions
+    });
+
+});
