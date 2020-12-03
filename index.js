@@ -24,3 +24,15 @@ app.get('/users/:userId', async function(req, res) {
         email: user.email
     })
 });
+
+
+app.get('/users/:userId/account', async function(req, res) {
+    const userId = req.params.userId;
+    const user = await models.User.findByPk(userId);
+    const account = await user.getAccounts();
+
+    res.send({
+      last_name: user.lastName,
+      account,
+    });
+  });

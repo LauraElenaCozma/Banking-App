@@ -19,3 +19,9 @@
 * create seed: *npx sequelize-cli seed:generate --name seed-users* 
 * to execute seeds *npx sequelize-cli db:seed:all*
 * *npm install faker --save-dev* for faker
+
+### Step 2: add a relationship
+* update the tabels from models in static associate(models) + add userId (for example) in one table as foreign key (in migration)
+* delete db.sqlite
+* execute *npx sequelize-cli db:migrate:undo:all*
+* then execute again the migrations *npx sequelize-cli db:migrate*
