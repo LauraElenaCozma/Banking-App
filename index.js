@@ -60,3 +60,27 @@ app.get('/users/:userId/promotions', async function(req, res) {
     });
 
 });
+
+app.get('/transactions/:accountId', async function(req, res) {
+    // get all transactions an account sent
+    const accountId = req.params.accountId;
+    const transactions = await models.Transaction.findAll({
+        where: {
+            id_account_from: accountId
+        }
+    });
+    console.log(transactions);
+    res.send({
+        a: 'success'
+    })
+});
+
+app.get('/address/:userId', async function(req, res) {
+    // get the address of some user 
+    const userId = req.params.userId;
+    const address = await models.Address.findByPk(userId);
+    console.log(address);
+    res.send({
+        address
+    })
+});

@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       models.User.hasMany(models.Account);
       models.User.belongsToMany(models.Promotion, { through: 'UserPromotions' });
-
+      models.User.hasOne(models.Address);
     }
   };
   User.init({
