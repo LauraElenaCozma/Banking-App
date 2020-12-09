@@ -25,3 +25,7 @@
 * delete db.sqlite
 * execute *npx sequelize-cli db:migrate:undo:all*
 * then execute again the migrations *npx sequelize-cli db:migrate*
+
+### Step 3: GraphQL
+* execute *npm install --save graphql*
+* binding between express and GraphQL *npm install --save express-graphql* 
