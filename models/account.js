@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   Account.init({
-    iban: DataTypes.STRING,
+    iban: DataTypes.STRING,   
     balance: DataTypes.DOUBLE,
     blocked: DataTypes.BOOLEAN
   }, {
