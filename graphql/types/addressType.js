@@ -5,6 +5,7 @@ const addressType = new GraphQLObjectType({
     name: 'Address',
     fields: {
         id: { type: GraphQLInt },
+        userId: { type: GraphQLInt },
         street: { type: GraphQLString },
         no: { type: GraphQLInt },
         city: { type: GraphQLString },

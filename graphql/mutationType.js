@@ -3,6 +3,8 @@ const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLString } = require
 const models = require('../models');
 const addressInputType = require('./inputTypes/addressInputType.js');
 const addressType = require('./types/addressType.js');
+const userType = require('./types/userType');
+const userInputType = require('./inputTypes/userInputType.js')
 
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
@@ -15,7 +17,6 @@ const mutationType = new GraphQLObjectType({
                 }
             },
             resolve: async (_, { addressInput }, context) => {
-                console.log(addressInput);
                 // const { user } = context;
 
                 // if(!user) {
@@ -25,6 +26,19 @@ const mutationType = new GraphQLObjectType({
             const user = await models.User.findByPk(addressInput.userId);
             const address = await user.createAddress(addressInput);
             return address
+            }
+        },
+
+        createUser: {
+            type: userType,
+            args: {
+                userInput: {
+                    type: GraphQLNonNull(userInputType)
+                }
+            },
+            resolve: async(_, { userInput }) => {
+                const user = await models.User.create(userInput);
+                return user;
             }
         }
     }
