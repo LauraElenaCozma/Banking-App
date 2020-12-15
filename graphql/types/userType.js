@@ -1,6 +1,7 @@
-const { GraphQLObjectType, GraphQLInt, GraphQLString } = require('graphql');
+const { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLList } = require('graphql');
 const addressType = require('./addressType.js');
 const models = require('../../models');
+const accountType = require('./accountType.js');
 
 const userType = new GraphQLObjectType({
     name: 'User',
@@ -17,10 +18,18 @@ const userType = new GraphQLObjectType({
         address: {
             type: addressType,
             resolve: async (parent) => {
-                const address = parent.getAddress();
+                const address = await parent.getAddress();
                 return address;
             }
+        },
+
+        account: {
+            type: GraphQLList(accountType),
+            resolve: async(parent) => {
+                return await parent.getAccounts();
+            }
         }
+        
     })
 });
 
