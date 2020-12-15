@@ -1,7 +1,8 @@
-const { GraphQLObjectType, GraphQLNonNull, GraphQLInt } = require('graphql');
+const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLList } = require('graphql');
 const models = require('../models');
 const userType = require('./types/userType.js');
 const addressType = require('./types/addressType.js');
+const accountType = require('./types/accountType.js');
 
 const queryType = new GraphQLObjectType({
     name: 'Query',
@@ -29,6 +30,19 @@ const queryType = new GraphQLObjectType({
             resolve: async (_, { addressId }) => {
                 const address = await models.Address.findByPk(addressId);
                 return address;
+            }
+        },
+        accounts: {
+            type: GraphQLList(accountType),
+            args: {
+                userId: {
+                    type: GraphQLNonNull(GraphQLInt)
+                }
+            },
+            resolve: async (_, { userId }) => {
+                const user = await models.User.findByPk(userId);
+                const accounts = await user.getAccounts();
+                return accounts;
             }
         },
     }

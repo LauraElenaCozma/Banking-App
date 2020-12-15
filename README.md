@@ -29,3 +29,7 @@
 ### Step 3: GraphQL
 * execute *npm install --save graphql*
 * binding between express and GraphQL *npm install --save express-graphql* 
+
+
+## FOR AUTH
+* *npm install jsonwebtoken*
