@@ -50,6 +50,8 @@ const mutationType = new GraphQLObjectType({
                 }
             },
             resolve: async (_, { userInput }) => {
+                // encrypt the received password not to store it in plain text in db
+                userInput.password = bcrypt.hashSync(userInput.password, config.SALT_ROUND);
                 const user = await models.User.create(userInput);
                 return user;
             }
