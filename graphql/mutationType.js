@@ -6,7 +6,10 @@ const addressType = require('./types/addressType.js');
 const userType = require('./types/userType');
 const userInputType = require('./inputTypes/userInputType.js')
 const accountType = require('./types/accountType.js');
+const jwt = require('jsonwebtoken')
 const accountInputType = require('./inputTypes/accountInputType.js');
+const config = require('../config/configSecretKey.js');
+const bcrypt = require('bcrypt')
 
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
@@ -46,9 +49,37 @@ const mutationType = new GraphQLObjectType({
                     type: GraphQLNonNull(userInputType)
                 }
             },
-            resolve: async(_, { userInput }) => {
+            resolve: async (_, { userInput }) => {
                 const user = await models.User.create(userInput);
                 return user;
+            }
+        },
+
+        login: {
+            type: GraphQLString,
+            args: {
+                email: {
+                    type: GraphQLNonNull(GraphQLString),
+                },
+                password: {
+                    type: GraphQLNonNull(GraphQLString),
+                },
+            },
+            resolve: async (parent, { email, password }) => {
+                const user = await models.User.findOne({
+                    where: {
+                        email
+                    }
+                });
+                if (user) {
+                    const isValid = await bcrypt.compare(password, user.password);
+                    if (isValid) {
+                        // Pasam `userId` in token pentru a-l folosi la validarea tokenului (authenticationMiddleware)
+                        const token = jwt.sign({ userId: user.id }, config.JWTSECRET);
+                        return token;
+                    }
+                    return null;
+                }
             }
         }
     }

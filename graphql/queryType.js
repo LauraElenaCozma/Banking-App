@@ -45,6 +45,19 @@ const queryType = new GraphQLObjectType({
                 return accounts;
             }
         },
+
+        account: {
+            type: accountType,
+            args: {
+                accountId: {
+                    type: GraphQLNonNull(GraphQLInt)
+                }
+            },
+            resolve: async (_, { accountId }) => {
+                const account = await models.Account.findByPk(accountId);
+                return account;
+            }
+        },
     }
 });
 
