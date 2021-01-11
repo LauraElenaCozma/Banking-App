@@ -1,8 +1,10 @@
-const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLList } = require('graphql');
+const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLList, GraphQLString, GraphQLError } = require('graphql');
 const models = require('../models');
 const userType = require('./types/userType.js');
 const addressType = require('./types/addressType.js');
 const accountType = require('./types/accountType.js');
+const { errorName } = require('../utils/errors.js');
+const checkUserAuth = require('../utils/authCheck.js');
 
 const queryType = new GraphQLObjectType({
     name: 'Query',
@@ -32,6 +34,7 @@ const queryType = new GraphQLObjectType({
                 return address;
             }
         },
+
         accounts: {
             type: GraphQLList(accountType),
             args: {
@@ -49,15 +52,35 @@ const queryType = new GraphQLObjectType({
         account: {
             type: accountType,
             args: {
-                accountId: {
-                    type: GraphQLNonNull(GraphQLInt)
+                iban: {
+                    type: GraphQLNonNull(GraphQLString)
                 }
             },
-            resolve: async (_, { accountId }) => {
-                const account = await models.Account.findByPk(accountId);
-                return account;
+            resolve: async (_, { iban }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                // checks if the account with the given iban exists
+                const account = await models.Account.findOne({
+                    where: { iban }
+                });
+
+                if (!account) {
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+
+                const { user } = context;
+                const accountUser = await account.getUser();
+
+                if (accountUser.id == user.id) {
+                    return account;
+                }
+
+                // account does not belong to this user
+                throw new GraphQLError(errorName.UNAUTHORIZED);
             }
         },
+
     }
 });
 

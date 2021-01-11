@@ -1,5 +1,4 @@
-const { address } = require('faker');
-const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLString } = require('graphql');
+const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLFloat, GraphQLString, GraphQLError, graphql } = require('graphql');
 const models = require('../models');
 const addressInputType = require('./inputTypes/addressInputType.js');
 const addressType = require('./types/addressType.js');
@@ -10,6 +9,9 @@ const jwt = require('jsonwebtoken')
 const accountInputType = require('./inputTypes/accountInputType.js');
 const config = require('../config/configSecretKey.js');
 const bcrypt = require('bcrypt')
+const { errorName } = require('../utils/errors.js');
+const checkUserAuth = require('../utils/authCheck.js');
+const generateIban = require('../utils/randomGenerator.js');
 
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
@@ -28,6 +30,7 @@ const mutationType = new GraphQLObjectType({
                 return address;
             }
         },
+
         createAccount: {
             type: accountType,
             args: {
@@ -36,7 +39,10 @@ const mutationType = new GraphQLObjectType({
                 }
             },
             resolve: async (_, { accountInput }, context) => {
-                const user = await models.User.findByPk(accountInput.userId);
+                // checks if user is authenticated
+                checkUserAuth(context);
+                const { user } = context;
+                accountInput.iban = generateIban();
                 const account = await user.createAccount(accountInput);
                 return account;
             }
@@ -47,12 +53,22 @@ const mutationType = new GraphQLObjectType({
             args: {
                 userInput: {
                     type: GraphQLNonNull(userInputType)
+                },
+                addressInput: {
+                    type: GraphQLNonNull(addressInputType)
                 }
             },
-            resolve: async (_, { userInput }) => {
+            resolve: async (_, { userInput, addressInput }) => {
                 // encrypt the received password not to store it in plain text in db
                 userInput.password = bcrypt.hashSync(userInput.password, config.SALT_ROUND);
-                const user = await models.User.create(userInput);
+
+                await user.createAddress({
+                    street: addressInput.street,
+                    no: addressInput.no,
+                    city: addressInput.city,
+                    country: addressInput.country
+                });
+
                 return user;
             }
         },
@@ -67,7 +83,7 @@ const mutationType = new GraphQLObjectType({
                     type: GraphQLNonNull(GraphQLString),
                 },
             },
-            resolve: async (parent, { email, password }) => {
+            resolve: async (_, { email, password }) => {
                 const user = await models.User.findOne({
                     where: {
                         email
@@ -82,6 +98,43 @@ const mutationType = new GraphQLObjectType({
                     }
                     return null;
                 }
+            }
+        },
+
+        addMoneyToAccount: {
+            type: GraphQLFloat,
+            args: {
+                money: {
+                    type: GraphQLNonNull(GraphQLFloat)
+                },
+                iban: {
+                    type: GraphQLNonNull(GraphQLString)
+                }
+            },
+            resolve: async (_, { iban, money }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                // checks if the account with the given iban exists
+                const account = await models.Account.findOne({
+                    where: { iban }
+                });
+
+                if (!account) {
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+
+                const { user } = context;
+                const accountUser = await account.getUser();
+
+                if (accountUser.id == user.id) {
+                    account.balance += money;
+                    await account.save();
+                    return account.balance;
+                }
+
+                // account does not belong to this user
+                throw new GraphQLError(errorName.UNAUTHORIZED);
             }
         }
     }
