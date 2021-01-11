@@ -32,7 +32,7 @@ module.exports = {
         type: Sequelize.FLOAT
       },
       date: {
-        type: Sequelize.DATE
+        type: Sequelize.DATEONLY
       },
       createdAt: {
         allowNull: false,

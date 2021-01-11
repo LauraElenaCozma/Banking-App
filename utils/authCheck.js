@@ -1,5 +1,5 @@
-const { errorName } = require('./errors.js');
 const { GraphQLError } = require('graphql');
+const { errorName } = require('./errors.js');
 
 function checkUserAuth(context) {
     if (!context.user) {
@@ -8,4 +8,4 @@ function checkUserAuth(context) {
     return true;
 }
 
-module.exports = checkUserAuth;
+module.exports = checkUserAuth; 

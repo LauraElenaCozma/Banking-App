@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
   };
   Transaction.init({
     sum: DataTypes.FLOAT,
-    date: DataTypes.DATE
+    date: DataTypes.DATEONLY
   }, {
     sequelize,
     modelName: 'Transaction',
