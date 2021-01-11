@@ -3,6 +3,7 @@ const app = express();
 const port = 3000;
 
 const { graphqlHTTP } = require('express-graphql');
+//const { Model } = require('sequelize/types'); tu o ai?
 const schema = require('./graphql');
 const authenticationMiddleware = require('./middlewares/authenticationMiddleware');
 
@@ -12,7 +13,7 @@ app.use('/graphql', authenticationMiddleware, graphqlHTTP({
 
 app.listen(port, () => {
   console.log('Server started!')
-});
+});  
 
 // const schema = buildSchema(`
 // type Address {
