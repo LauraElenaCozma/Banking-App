@@ -3,6 +3,7 @@ const models = require('../models');
 const userType = require('./types/userType.js');
 const addressType = require('./types/addressType.js');
 const accountType = require('./types/accountType.js');
+const transactionType = require('./types/transactionType.js');
 const { errorName } = require('../utils/errors.js');
 const checkUserAuth = require('../utils/authCheck.js');
 const promotionType = require('./types/promotionType.js');
@@ -12,13 +13,12 @@ const queryType = new GraphQLObjectType({
     fields: {
         user: {
             type: userType,
-            args: {
-                userId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                }
-            },
-            resolve: async (_, { userId }) => {
-                const user = await models.User.findByPk(userId);
+            args: { },
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                const { user } = context;
                 return user;
             },
         },
@@ -31,6 +31,7 @@ const queryType = new GraphQLObjectType({
                 }
             },
             resolve: async (_, { addressId }) => {
+                //TODO: check if it needs a context
                 const address = await models.Address.findByPk(addressId);
                 return address;
             }
@@ -38,13 +39,12 @@ const queryType = new GraphQLObjectType({
 
         accounts: {
             type: GraphQLList(accountType),
-            args: {
-                userId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                }
-            },
-            resolve: async (_, { userId }) => {
-                const user = await models.User.findByPk(userId);
+            args: { },
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                const { user } = context;
                 const accounts = await user.getAccounts();
                 return accounts;
             }
@@ -84,13 +84,12 @@ const queryType = new GraphQLObjectType({
 
         getPromotionsOfUser: {
             type: GraphQLList(promotionType),
-            args: {
-                userId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                }
-            },
-            resolve: async (_, { userId }) => {
-                const user = await models.User.findByPk(userId);
+            args: { },
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                const { user } = context;
                 const promotions = await user.getPromotions();
                 return promotions;
             }
@@ -98,8 +97,9 @@ const queryType = new GraphQLObjectType({
 
         getPromotions: {
             type: GraphQLList(promotionType),
-            args: {},
-            resolve: async (_, {}) => {
+            args: { },
+            resolve: async (_, { }) => {
+                //the user doesn't have to be authenticated to see the available promotions
                 const promotions = await models.Promotion.findAll();
                 return promotions;
             }
@@ -107,20 +107,18 @@ const queryType = new GraphQLObjectType({
 
         getMaxTransaction: {
             type: GraphQLString,
-            args: {
-                userId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                }
-            },
-            resolve: async (_, { userId }) => {
+            args: { },
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
                 let maxSum = 0;
-                const user = await models.User.findByPk(userId);
+                const { user } = context;
                 const promotions = await user.getPromotions();
                 promotions.forEach(promotion => {
-                    if(maxSum != null) { //maxSum == null -> the maximum sum is undefined; there is no limit
-                        if(promotion.maxSumOfTransactions == null)
-                            maxSum = null;
-                        else if(promotion.endDate == null && maxSum < promotion.maxSumOfTransactions) {
+                    if(promotion.maxSumOfTransactions != null)
+                    {
+                        if(promotion.endDate == null && maxSum < promotion.maxSumOfTransactions) {
                             maxSum = promotion.maxSumOfTransactions;
                         }
                         else {
@@ -131,10 +129,59 @@ const queryType = new GraphQLObjectType({
                             } 
                         }
                     }
+                    
                 });
-                if(maxSum == null)
-                    return "No limit for transactions";
-                else return "The limit for one transaction is " + maxSum.toString();
+                return "The limit for one transaction is " + maxSum.toString();
+            }
+        },
+        transaction: {
+            type: transactionType,
+            args: {
+                transactionId: {
+                    type: GraphQLNonNull(GraphQLInt)
+                }
+            },
+            resolve: async (_, { transactionId }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                const transaction = await models.Transaction.findByPk(transactionId);
+                console.log("transaction");
+                if (!transaction) {
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+                console.log(transaction);
+                const { user } = context;
+                // checks if the account with the given iban exists
+
+                //console.log(transaction.id_account_from);
+                const accountFrom = await models.Account.findByPk(transaction.id_account_from);
+                //console.log(accountFrom);
+                const userFrom = await accountFrom.getUser();
+                const accountTo = await models.Account.findByPk(transaction.id_account_to);
+                const userTo = await accountTo.getUser();
+
+                if (userFrom.id != user.id  && userTo.id != user.id) {
+
+                    // transaction does not belong to this user
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+
+                return transaction;                
+            }
+        },
+        transactions: {
+            type: GraphQLList(transactionType),
+            args: { },
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                const { user } = context;
+                const transactions = await models.Transaction.findAll();
+            
+
+                return transactions;                
             }
         }
     }

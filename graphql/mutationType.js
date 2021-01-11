@@ -144,9 +144,6 @@ const mutationType = new GraphQLObjectType({
         addPromotionToUser: {
             type: promotionType,
             args: {
-                userId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                },
                 promotionId: {
                     type: GraphQLNonNull(GraphQLInt)
                 },
@@ -154,7 +151,10 @@ const mutationType = new GraphQLObjectType({
                     type: GraphQLNonNull(GraphQLString)
                 }
             },
-            resolve: async (_, { userId, promotionId, accountIban }, context) => {
+            resolve: async (_, { promotionId, accountIban }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
                 const promotion = await models.Promotion.findByPk(promotionId);
                 if (promotion == null)
                 {
@@ -162,21 +162,31 @@ const mutationType = new GraphQLObjectType({
                     return "The promotion having this id does not exist!";
                 }
                 
-                const user = await models.User.findByPk(userId);
+                const {user} = context;
                 const activePromotions = await user.getPromotions();
                 activePromotions.forEach(promotion => {
                     if(promotion.id == promotionId)
-                        return "The promotion is already added";
+                    throw new GraphQLError(errorName.RESOURCE_ALREADY_EXISTS);
                 });
-                //nu intra pe return
+
                 const account = await models.Account.findOne({ where: { iban: accountIban } });
-                if (account == null)
+                if (!account)
                 {
-                    return "The iban is incorrect!";
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+                const accountUser = await account.getUser();
+
+                if (accountUser.id != user.id) {
+                    // account does not belong to this user
+                    //TODO: se poate sa platesti promotia cu contul altcuiva?
+                    throw new GraphQLError(errorName.UNAUTHORIZED); 
                 }
                 await user.addPromotion(promotion, { through: { edit: true }});
+
                 account.balance -= promotion.price;
-                //nu se scade din valoarea contului
+                await account.save();
+
+                //TODO: verifica ce returneaza
                 //TODO: adauga tranzactie
                 /*const result = await User.findOne({
                     where: { userId: userId},
@@ -191,21 +201,20 @@ const mutationType = new GraphQLObjectType({
         removePromotionOfUser: {
             type: promotionType,
             args: {
-                userId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                },
                 promotionId: {
                     type: GraphQLNonNull(GraphQLInt)
                 }
             },
-            resolve: async (_, { userId, promotionId }) => {
+            resolve: async (_, { promotionId }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
                 const promotion = await models.Promotion.findByPk(promotionId);
                 if (promotion == null)
                 {
-                    //TODO:change return
-                    return "The promotion having this id does not exist!";
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
                 }
-                const user = await models.User.findByPk(userId);
+                const {user} = context;
                 await user.removePromotion(promotion);
                 return promotion;
             }
