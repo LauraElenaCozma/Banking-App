@@ -1,4 +1,4 @@
-const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLList, GraphQLString, GraphQLError } = require('graphql');
+const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLList, GraphQLString, GraphQLError, GraphQLFloat } = require('graphql');
 const models = require('../models');
 const userType = require('./types/userType.js');
 const addressType = require('./types/addressType.js');
@@ -6,6 +6,7 @@ const accountType = require('./types/accountType.js');
 const { errorName } = require('../utils/errors.js');
 const checkUserAuth = require('../utils/authCheck.js');
 const promotionType = require('./types/promotionType.js');
+const getMaxTransaction = require('../utils/transactionUtils.js');
 
 const queryType = new GraphQLObjectType({
     name: 'Query',
@@ -99,14 +100,14 @@ const queryType = new GraphQLObjectType({
         getPromotions: {
             type: GraphQLList(promotionType),
             args: {},
-            resolve: async (_, {}) => {
+            resolve: async (_, { }) => {
                 const promotions = await models.Promotion.findAll();
                 return promotions;
             }
         },
 
         getMaxTransaction: {
-            type: GraphQLString,
+            type: GraphQLFloat,
             args: {
                 userId: {
                     type: GraphQLNonNull(GraphQLInt)
@@ -114,27 +115,12 @@ const queryType = new GraphQLObjectType({
             },
             resolve: async (_, { userId }) => {
                 let maxSum = 0;
-                const user = await models.User.findByPk(userId);
-                const promotions = await user.getPromotions();
-                promotions.forEach(promotion => {
-                    if(maxSum != null) { //maxSum == null -> the maximum sum is undefined; there is no limit
-                        if(promotion.maxSumOfTransactions == null)
-                            maxSum = null;
-                        else if(promotion.endDate == null && maxSum < promotion.maxSumOfTransactions) {
-                            maxSum = promotion.maxSumOfTransactions;
-                        }
-                        else {
-                            let endDate = new Date(promotion.endDate);
-                            let currentDate = new Date();
-                            if(endDate > currentDate && maxSum < promotion.maxSumOfTransactions) {
-                                maxSum = promotion.maxSumOfTransactions;
-                            } 
-                        }
-                    }
-                });
-                if(maxSum == null)
-                    return "No limit for transactions";
-                else return "The limit for one transaction is " + maxSum.toString();
+                const { user } = context;
+
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                return await getMaxTransaction(user);
             }
         }
     }

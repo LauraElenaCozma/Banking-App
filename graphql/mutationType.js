@@ -15,6 +15,8 @@ const bcrypt = require('bcrypt');
 const promotionInputType = require('./inputTypes/promotionInputType');
 const promotionType = require('./types/promotionType');
 const userPromotionInputType = require('./inputTypes/userPromotionInputType');
+const transactionType = require('./types/transactionType.js');
+const getMaxTransaction = require('../utils/transactionUtils');
 
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
@@ -64,6 +66,7 @@ const mutationType = new GraphQLObjectType({
             resolve: async (_, { userInput, addressInput }) => {
                 // encrypt the received password not to store it in plain text in db
                 userInput.password = bcrypt.hashSync(userInput.password, config.SALT_ROUND);
+                const user = await models.User.create(userInput);
 
                 await user.createAddress({
                     street: addressInput.street,
@@ -130,14 +133,24 @@ const mutationType = new GraphQLObjectType({
                 const { user } = context;
                 const accountUser = await account.getUser();
 
-                if (accountUser.id == user.id) {
-                    account.balance += money;
-                    await account.save();
-                    return account.balance;
+                if (accountUser.id != user.id) {
+                    // account does not belong to this user
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
                 }
 
-                // account does not belong to this user
-                throw new GraphQLError(errorName.UNAUTHORIZED);
+                // create transaction
+                const transaction = await models.Transaction.create({
+                    sum: money,
+                    date: new Date(),
+                    id_account_from: accountUser.id,
+                    id_account_to: accountUser.id,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+
+                account.balance += money;
+                await account.save();
+                return account.balance;
             }
         },
 
@@ -156,28 +169,28 @@ const mutationType = new GraphQLObjectType({
             },
             resolve: async (_, { userId, promotionId, accountIban }, context) => {
                 const promotion = await models.Promotion.findByPk(promotionId);
-                if (promotion == null)
-                {
+                if (promotion == null) {
                     //TODO:change return
                     return "The promotion having this id does not exist!";
                 }
-                
+
                 const user = await models.User.findByPk(userId);
                 const activePromotions = await user.getPromotions();
                 activePromotions.forEach(promotion => {
-                    if(promotion.id == promotionId)
+                    if (promotion.id == promotionId)
                         return "The promotion is already added";
                 });
                 //nu intra pe return
                 const account = await models.Account.findOne({ where: { iban: accountIban } });
-                if (account == null)
-                {
+                if (account == null) {
                     return "The iban is incorrect!";
                 }
-                await user.addPromotion(promotion, { through: { edit: true }});
+                await user.addPromotion(promotion, { through: { edit: true } });
                 account.balance -= promotion.price;
-                //nu se scade din valoarea contului
+                await account.save();
+
                 //TODO: adauga tranzactie
+                // TODO: creeaza user banca si cont pt banca astfel incat sa avem ce pune pe iban_to
                 /*const result = await User.findOne({
                     where: { userId: userId},
                     //include: Profile
@@ -187,7 +200,7 @@ const mutationType = new GraphQLObjectType({
             }
 
         },
-        
+
         removePromotionOfUser: {
             type: promotionType,
             args: {
@@ -200,8 +213,7 @@ const mutationType = new GraphQLObjectType({
             },
             resolve: async (_, { userId, promotionId }) => {
                 const promotion = await models.Promotion.findByPk(promotionId);
-                if (promotion == null)
-                {
+                if (promotion == null) {
                     //TODO:change return
                     return "The promotion having this id does not exist!";
                 }
@@ -210,6 +222,85 @@ const mutationType = new GraphQLObjectType({
                 return promotion;
             }
         },
+
+        createTransaction: {
+            type: transactionType,
+            args: {
+                iban_from: {
+                    type: GraphQLNonNull(GraphQLString)
+                },
+                iban_to: {
+                    type: GraphQLNonNull(GraphQLString)
+                },
+                sum: {
+                    type: GraphQLNonNull(GraphQLFloat)
+                }
+            },
+            resolve: async (_, { iban_from, iban_to, sum }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                // checks if the giving account with the given iban exists
+                const account_from = await models.Account.findOne({
+                    where: { iban: iban_from }
+                });
+
+                if (!account_from) {
+                    throw new GraphQLError(errorName.SENDING_IBAN_NOT_EXISTS);
+                }
+
+                // checks if the receiving account with the given iban exists
+                const account_to = await models.Account.findOne({
+                    where: { iban: iban_to }
+                });
+
+                if (!account_to) {
+                    throw new GraphQLError(errorName.RECEIVING_IBAN_NOT_EXISTS);
+                }
+
+                const { user } = context;
+                const accountUser = await account_from.getUser();
+
+                // check if account belongs to user
+                if (accountUser.id != user.id) {
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+
+                // check if sending account is not blocked
+                if (account_from.blocked) {
+                    throw new GraphQLError(errorName.ACCOUNT_BLOCKED);
+                }
+
+                // check if the user can make this transaction (regarding promotions)
+                const maxTransaction = await getMaxTransaction(user);
+                if (maxTransaction < sum) {
+                    throw new GraphQLError(errorName.PROMOTION_NOT_ALLOWED);
+                }
+
+                // check if the account has enough money
+                if (sum > account_from.balance) {
+                    throw new GraphQLError(errorName.NOT_ENOUGH_MONEY);
+                }
+
+                // create transaction
+                const transaction = await models.Transaction.create({
+                    sum,
+                    date: new Date(),
+                    id_account_from: account_from.id,
+                    id_account_to: account_to.id,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+
+                account_from.balance -= sum;
+                account_to.balance += sum;
+
+                await account_from.save();
+                await account_to.save();
+
+                return transaction;
+            }
+        }
     }
 });
 
