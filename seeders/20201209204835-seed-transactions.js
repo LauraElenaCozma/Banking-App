@@ -8,7 +8,7 @@ module.exports = {
       iban_from: 'ABCDEF',
       iban_to: 'GHIJKL',
       sum: 2000,
-      date: '2021-3-3',
+      date: '2021-03-03',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -17,7 +17,7 @@ module.exports = {
       iban_from: 'YZ1234',
       iban_to: 'ABCDEF',
       sum: 7999,
-      date: '2021-1-2',
+      date: '2021-01-02',
       createdAt: new Date(),
       updatedAt: new Date(),
     });

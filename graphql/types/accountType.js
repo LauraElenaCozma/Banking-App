@@ -2,7 +2,7 @@ const { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLFloat, GraphQLBoole
 const transaction = require('../../models/transaction');
 const transactionType = require('./transactionType');
 const models = require('../../models');
-
+const { Op } = require('sequelize');
 
 const accountType = new GraphQLObjectType({
     name: 'Account',
@@ -33,7 +33,27 @@ const accountType = new GraphQLObjectType({
 
                 return transactions;
             }
-        }
+        },
+        
+        // gets all transactions (sent and recevied money)
+        allTransactions: {
+            type: GraphQLList(transactionType),
+            resolve: async (parent) => {
+                const transactions = await models.Transaction.findAll({
+                    where: {
+                        [Op.or]: [
+                            { iban_to: parent.iban },
+                            { iban_from: parent.iban }
+                        ]
+                    },
+                    order: ['date'],
+                });
+
+                return transactions;
+            }
+        },
+
+        // get all transactions (send and received money this month)
 
     }
 });

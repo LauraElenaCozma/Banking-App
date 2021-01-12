@@ -1,6 +1,7 @@
 'use strict';
 const models = require('../models');
 const faker = require('faker');
+const bank = require('../utils/bank.js');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -51,6 +52,9 @@ module.exports = {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    // account for the bank
+    usersAccounts.push(bank.accountBank);
 
     await queryInterface.bulkInsert('Accounts', usersAccounts, {});
   },

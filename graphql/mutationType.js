@@ -17,6 +17,7 @@ const promotionType = require('./types/promotionType');
 const userPromotionInputType = require('./inputTypes/userPromotionInputType');
 const transactionType = require('./types/transactionType.js');
 const getMaxTransaction = require('../utils/transactionUtils');
+const { accountBank, userBank } = require('../utils/bank.js')
 
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
@@ -65,10 +66,16 @@ const mutationType = new GraphQLObjectType({
                     type: GraphQLNonNull(addressInputType)
                 }
             },
-            resolve: async (_, { userInput, addressInput }) => {
+            resolve: async (_, { userInput, addressInput }, context) => {
+                // to create a user, you shouldn't be logged in (no token in header)
+                let { user } = context;
+                if (user) {
+                    throw new GraphQLError(errorName.USER_AUTHENTICATED);
+                }
+
                 // encrypt the received password not to store it in plain text in db
                 userInput.password = bcrypt.hashSync(userInput.password, config.SALT_ROUND);
-                const user = await models.User.create(userInput);
+                user = await models.User.create(userInput);
 
                 await user.createAddress({
                     street: addressInput.street,
@@ -138,11 +145,14 @@ const mutationType = new GraphQLObjectType({
                     throw new GraphQLError(errorName.UNAUTHORIZED);
                 }
 
+                console.log(
+                    ' ------------------------- '
+                );
                 // create transaction
                 const transaction = await models.Transaction.create({
                     sum: money,
                     date: new Date(),
-                    iban_from: account.iban,
+                    iban_from: accountBank.iban,
                     iban_to: account.iban,
                     createdAt: new Date(),
                     updatedAt: new Date()
@@ -302,7 +312,7 @@ const mutationType = new GraphQLObjectType({
 
                 await account_from.save();
                 await account_to.save();
-                
+
                 return transaction;
             }
         }
