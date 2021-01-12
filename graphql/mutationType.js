@@ -21,20 +21,20 @@ const getMaxTransaction = require('../utils/transactionUtils');
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
     fields: {
-        createAddress: {
-            type: addressType,
-            args: {
-                addressInput: {
-                    type: GraphQLNonNull(addressInputType)
-                }
-            },
-            resolve: async (_, { addressInput }, context) => {
+        // createAddress: {
+        //     type: addressType,
+        //     args: {
+        //         addressInput: {
+        //             type: GraphQLNonNull(addressInputType)
+        //         }
+        //     },
+        //     resolve: async (_, { addressInput }, context) => {
 
-                const user = await models.User.findByPk(addressInput.userId);
-                const address = await user.createAddress(addressInput);
-                return address;
-            }
-        },
+        //         const user = await models.User.findByPk(addressInput.userId);
+        //         const address = await user.createAddress(addressInput);
+        //         return address;
+        //     }
+        // },
 
         createAccount: {
             type: accountType,
@@ -44,6 +44,8 @@ const mutationType = new GraphQLObjectType({
                 }
             },
             resolve: async (_, { accountInput }, context) => {
+                //TODO check if you can add another account regarding promotions
+
                 // checks if user is authenticated
                 checkUserAuth(context);
                 const { user } = context;

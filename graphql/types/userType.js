@@ -23,7 +23,7 @@ const userType = new GraphQLObjectType({
             }
         },
 
-        account: {
+        accounts: {
             type: GraphQLList(accountType),
             resolve: async(parent) => {
                 return await parent.getAccounts();
