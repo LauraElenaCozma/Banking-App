@@ -115,13 +115,26 @@ const queryType = new GraphQLObjectType({
         getMaxTransaction: {
             type: GraphQLString,
             args: {},
-            resolve: async (_, { userId }) => {
+            resolve: async (_, {}) => {
 
                 const { user } = context;
                 // checks if user is authenticated
                 checkUserAuth(context);
 
                 return await getMaxTransaction(user);
+            }
+        },
+        // get the maximum number of accounts that a user can have
+        getMaxNoOfAccounts: {
+            type: GraphQLString,
+            args: {},
+            resolve: async (_, {}) => {
+
+                const { user } = context;
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                return await getMaxNoAccounts(user);
             }
         },
 

@@ -16,7 +16,7 @@ const promotionInputType = require('./inputTypes/promotionInputType');
 const promotionType = require('./types/promotionType');
 const userPromotionInputType = require('./inputTypes/userPromotionInputType');
 const transactionType = require('./types/transactionType.js');
-const getMaxTransaction = require('../utils/transactionUtils');
+const {getMaxTransaction, getMaxNoAccounts} = require('../utils/transactionUtils');
 
 const mutationType = new GraphQLObjectType({
     name: 'Mutation',
@@ -44,11 +44,19 @@ const mutationType = new GraphQLObjectType({
                 }
             },
             resolve: async (_, { accountInput }, context) => {
-                //TODO check if you can add another account regarding promotions
-
                 // checks if user is authenticated
                 checkUserAuth(context);
                 const { user } = context;
+
+                // check if you can add another account regarding promotions
+                let maxNoAccounts = await getMaxNoAccounts(user);
+                const accounts = user.getAccounts();
+                if (accounts.length >= maxNoAccounts)
+                {
+                    throw new GraphQLError(errorName.PROMOTION_NOT_ALLOWED);
+                }
+
+                accountInput.userId = user.id;
                 accountInput.iban = generateIban();
                 const account = await user.createAccount(accountInput);
                 return account;
@@ -167,41 +175,61 @@ const mutationType = new GraphQLObjectType({
             resolve: async (_, { promotionId, accountIban }, context) => {
                 // checks if user is authenticated
                 checkUserAuth(context);
+                const { user } = context;
 
+                //check if the promotion exists
                 const promotion = await models.Promotion.findByPk(promotionId);
                 if (promotion == null) {
-                    //TODO:change return
-                    return "The promotion having this id does not exist!";
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
                 }
 
-                const { user } = context;
+                // check if the promotion does not already exist in the user's account
                 const activePromotions = await user.getPromotions();
                 activePromotions.forEach(promotion => {
                     if (promotion.id == promotionId)
                         throw new GraphQLError(errorName.RESOURCE_ALREADY_EXISTS);
                 });
 
-                const account = await models.Account.findOne({ where: { iban: accountIban } });
+                // check if the account exists
+                const account = await models.Account.findByPk(accountIban);
                 if (!account) {
                     throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
                 }
-                const accountUser = await account.getUser();
 
+                // check if the account is not blocked
+                if (account.blocked) {
+                    throw new GraphQLError(errorName.ACCOUNT_BLOCKED);
+                }
+
+                // check if the account belongs to this user
+                const accountUser = await account.getUser();
                 if (accountUser.id != user.id) {
-                    // account does not belong to this user
-                    //TODO: se poate sa platesti promotia cu contul altcuiva? NU
                     throw new GraphQLError(errorName.UNAUTHORIZED);
                 }
+
+                // check if the account has enough money
+                if (promotion.price > account.balance) {
+                    throw new GraphQLError(errorName.NOT_ENOUGH_MONEY);
+                }
+
                 await user.addPromotion(promotion, { through: { edit: true } });
 
+                //pay the promotion
                 account.balance -= promotion.price;
+
+                //create the transaction
+                const transaction = await models.Transaction.create({
+                    sum: promotion.price,
+                    date: new Date(),
+                    iban_from: accountIban,
+                    iban_to: "CONTBANCA999999", //TODO: change
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
                 await account.save();
 
-                //TODO: verifica ce returneaza
+                //TODO: verifica ce returneaza                
 
-                //TODO: adauga tranzactie
-
-                // TODO: creeaza user banca si cont pt banca astfel incat sa avem ce pune pe iban_to
                 /*const result = await User.findOne({
                     where: { userId: userId},
                     //include: Profile
@@ -223,10 +251,12 @@ const mutationType = new GraphQLObjectType({
                 // checks if user is authenticated
                 checkUserAuth(context);
 
+                //check if the promotion exists
                 const promotion = await models.Promotion.findByPk(promotionId);
                 if (promotion == null) {
                     throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
                 }
+
                 const { user } = context;
                 await user.removePromotion(promotion);
                 return promotion;

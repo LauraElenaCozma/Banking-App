@@ -1,6 +1,6 @@
-
+const faker = require('faker');
 function generateIban() {
-    return Math.random().toString(36).slice(2);
+    return faker.finance.iban();
 }
 
 module.exports = generateIban;
