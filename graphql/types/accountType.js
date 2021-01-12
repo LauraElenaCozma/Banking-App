@@ -3,9 +3,8 @@ const { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLFloat, GraphQLBoole
 const accountType = new GraphQLObjectType({
     name: 'Account',
     fields: {
-        id: { type: GraphQLInt },
-        userId: { type: GraphQLInt },
         iban: { type: GraphQLString },
+        userId: { type: GraphQLInt },
         balance: { type: GraphQLFloat },
         blocked: { type: GraphQLBoolean },
         createdAt: { type: GraphQLString },

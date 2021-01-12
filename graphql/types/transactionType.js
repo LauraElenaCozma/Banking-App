@@ -4,8 +4,8 @@ const transactionType = new GraphQLObjectType({
     name: 'Transaction',
     fields: {
         id: { type: GraphQLInt },
-        id_account_from: { type: GraphQLInt },
-        id_account_to: { type: GraphQLInt },
+        iban_from: { type: GraphQLString },
+        iban_to: { type: GraphQLString },
         sum: { type: GraphQLFloat },
         date: { type: GraphQLString },
         createdAt: { type: GraphQLString },

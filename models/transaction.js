@@ -11,16 +11,20 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.Transaction.belongsTo(models.Account, {
-        foreignKey: 'id_account_from'
-      });
+      // models.Transaction.belongsTo(models.Account,
+      // //    {
+      // //   foreignKey: 'iban_from'
+      // // }
+      // );
 
-      models.Transaction.belongsTo(models.Account, {
-        foreignKey: 'id_account_to'
-      });
+      // models.Transaction.belongsTo(models.Account, {
+      //   foreignKey: 'iban_to'
+      // });
     }
   };
   Transaction.init({
+    iban_to: DataTypes.STRING,
+    // iban_from: DataTypes.STRING,
     sum: DataTypes.FLOAT,
     date: DataTypes.DATEONLY
   }, {

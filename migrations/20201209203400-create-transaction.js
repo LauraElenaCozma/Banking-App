@@ -8,25 +8,25 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_account_from: {
+      iban_from: {
         allowNull: false,
-        type: Sequelize.INTEGER,
+        type: Sequelize.STRING,
         references: {
           model: {
             tableName: 'Accounts',
           },
-          key: 'id'
+          key: 'iban'
         },
       },
-      id_account_to: {
+      iban_to: {
         allowNull: false,
-        type: Sequelize.INTEGER,
-        references: {
-          model: {
-            tableName: 'Accounts',
-          },
-          key: 'id'
-        },
+        type: Sequelize.STRING,
+        // references: {
+        //   model: {
+        //     tableName: 'Accounts',
+        //   },
+        //   key: 'iban'
+        // },
       },
       sum: {
         type: Sequelize.FLOAT

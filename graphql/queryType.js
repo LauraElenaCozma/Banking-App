@@ -26,19 +26,19 @@ const queryType = new GraphQLObjectType({
 
         address: {
             type: addressType,
-            args: {
-                addressId: {
-                    type: GraphQLNonNull(GraphQLInt)
-                }
-            },
-            resolve: async (_, { addressId }) => {
-                //TODO: check if it needs a context
-                const address = await models.Address.findByPk(addressId);
+            args: {},
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+                const { user } = context;
+
+                const address = await user.getAddress();
                 return address;
             }
         },
 
         accounts: {
+            // gets user's accounts
             type: GraphQLList(accountType),
             args: {},
             resolve: async (_, { }, context) => {
@@ -117,6 +117,7 @@ const queryType = new GraphQLObjectType({
                 return await getMaxTransaction(user);
             }
         },
+
         transaction: {
             type: transactionType,
             args: {
@@ -129,23 +130,17 @@ const queryType = new GraphQLObjectType({
                 checkUserAuth(context);
 
                 const transaction = await models.Transaction.findByPk(transactionId);
-                console.log("transaction");
                 if (!transaction) {
                     throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
                 }
-                console.log(transaction);
-                const { user } = context;
-                // checks if the account with the given iban exists
 
-                //console.log(transaction.id_account_from);
-                const accountFrom = await models.Account.findByPk(transaction.id_account_from);
-                //console.log(accountFrom);
+                const accountFrom = await models.Account.findByPk(transaction.iban_from);
+                const accountTo = await models.Account.findByPk(transaction.iban_to);
+
                 const userFrom = await accountFrom.getUser();
-                const accountTo = await models.Account.findByPk(transaction.id_account_to);
                 const userTo = await accountTo.getUser();
 
                 if (userFrom.id != user.id && userTo.id != user.id) {
-
                     // transaction does not belong to this user
                     throw new GraphQLError(errorName.UNAUTHORIZED);
                 }
@@ -153,17 +148,74 @@ const queryType = new GraphQLObjectType({
                 return transaction;
             }
         },
-        transactions: {
+
+        transactionsSendMoney: {
+            // gets all the transactions for the authenticated user 
+            // (the ones he sent money, not received)
+
             type: GraphQLList(transactionType),
-            args: {},
-            resolve: async (_, { }, context) => {
+            args: {
+                iban: {
+                    type: GraphQLNonNull(GraphQLString)
+                },
+            },
+            resolve: async (_, { iban }, context) => {
                 // checks if user is authenticated
-                // TODO what does this do?
                 checkUserAuth(context);
 
-                const { user } = context;
-                const transactions = await models.Transaction.findAll();
+                // checks if the account with the given iban exists
+                const account = await models.Account.findByPk(iban);
 
+                if (!account) {
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+
+                const { user } = context;
+                const accountUser = await account.getUser();
+
+                if (accountUser.id != user.id) {
+                    // account does not belong to this user
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+                const transactions = await account.getTransactions();
+
+                return transactions;
+            }
+        },
+
+        transactionsReceivedMoney: {
+            // gets all the transactions for the authenticated user 
+            // (the ones he received money, not sent)
+
+            type: GraphQLList(transactionType),
+            args: {
+                iban: {
+                    type: GraphQLNonNull(GraphQLString)
+                },
+            },
+            resolve: async (_, { iban }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                // checks if the account with the given iban exists
+                const account = await models.Account.findByPk(iban);
+
+                if (!account) {
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+
+                const { user } = context;
+                const accountUser = await account.getUser();
+
+                if (accountUser.id != user.id) {
+                    // account does not belong to this user
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+                const transactions = await models.Transaction.findAll({
+                    where: {
+                        iban_to: iban
+                    }
+                });
 
                 return transactions;
             }

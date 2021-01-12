@@ -4,19 +4,21 @@ const faker = require('faker');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const usersQuery = await models.User.findAll();
-    let usersAccounts = usersQuery.map(user => ({
-      userId: user.id,
-      iban: faker.finance.iban(),
+    let usersAccounts = [];
+
+    usersAccounts.push({
+      userId: 1,
+      iban: "ABCDEF",
       balance: Math.floor(Math.random() * 10000),
       blocked: faker.random.boolean(),
       createdAt: new Date(),
       updatedAt: new Date(),
-    }));
+    });
+
 
     usersAccounts.push({
-      userId: 4,
-      iban: faker.finance.iban(),
+      userId: 1,
+      iban: "GHIJKL",
       balance: Math.floor(Math.random() * 10000),
       blocked: faker.random.boolean(),
       createdAt: new Date(),
@@ -24,17 +26,8 @@ module.exports = {
     });
 
     usersAccounts.push({
-      userId: 4,
-      iban: faker.finance.iban(),
-      balance: Math.floor(Math.random() * 10000),
-      blocked: faker.random.boolean(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    usersAccounts.push({
-      userId: 4,
-      iban: faker.finance.iban(),
+      userId: 2,
+      iban: 'MNOPQR',
       balance: Math.floor(Math.random() * 10000),
       blocked: faker.random.boolean(),
       createdAt: new Date(),
@@ -43,7 +36,16 @@ module.exports = {
 
     usersAccounts.push({
       userId: 3,
-      iban: faker.finance.iban(),
+      iban: 'STUVWX',
+      balance: Math.floor(Math.random() * 10000),
+      blocked: faker.random.boolean(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    usersAccounts.push({
+      userId: 3,
+      iban: 'YZ1234',
       balance: Math.floor(Math.random() * 10000),
       blocked: faker.random.boolean(),
       createdAt: new Date(),

@@ -108,7 +108,7 @@ const mutationType = new GraphQLObjectType({
         },
 
         addMoneyToAccount: {
-            type: GraphQLFloat,
+            type: accountType,
             args: {
                 money: {
                     type: GraphQLNonNull(GraphQLFloat)
@@ -122,9 +122,7 @@ const mutationType = new GraphQLObjectType({
                 checkUserAuth(context);
 
                 // checks if the account with the given iban exists
-                const account = await models.Account.findOne({
-                    where: { iban }
-                });
+                const account = await models.Account.findByPk(iban);
 
                 if (!account) {
                     throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
@@ -142,15 +140,15 @@ const mutationType = new GraphQLObjectType({
                 const transaction = await models.Transaction.create({
                     sum: money,
                     date: new Date(),
-                    id_account_from: accountUser.id,
-                    id_account_to: accountUser.id,
+                    iban_from: account.iban,
+                    iban_to: account.iban,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
 
                 account.balance += money;
                 await account.save();
-                return account.balance;
+                return account;
             }
         },
 
@@ -182,8 +180,7 @@ const mutationType = new GraphQLObjectType({
                 });
 
                 const account = await models.Account.findOne({ where: { iban: accountIban } });
-                if (!account)
-                {
+                if (!account) {
                     throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
                 }
                 const accountUser = await account.getUser();
@@ -193,13 +190,15 @@ const mutationType = new GraphQLObjectType({
                     //TODO: se poate sa platesti promotia cu contul altcuiva? NU
                     throw new GraphQLError(errorName.UNAUTHORIZED);
                 }
-                await user.addPromotion(promotion, { through: { edit: true }});
+                await user.addPromotion(promotion, { through: { edit: true } });
 
                 account.balance -= promotion.price;
                 await account.save();
 
                 //TODO: verifica ce returneaza
+
                 //TODO: adauga tranzactie
+
                 // TODO: creeaza user banca si cont pt banca astfel incat sa avem ce pune pe iban_to
                 /*const result = await User.findOne({
                     where: { userId: userId},
@@ -250,18 +249,13 @@ const mutationType = new GraphQLObjectType({
                 checkUserAuth(context);
 
                 // checks if the giving account with the given iban exists
-                const account_from = await models.Account.findOne({
-                    where: { iban: iban_from }
-                });
-
+                const account_from = await models.Account.findByPk(iban_from);
                 if (!account_from) {
                     throw new GraphQLError(errorName.SENDING_IBAN_NOT_EXISTS);
                 }
 
                 // checks if the receiving account with the given iban exists
-                const account_to = await models.Account.findOne({
-                    where: { iban: iban_to }
-                });
+                const account_to = await models.Account.findByPk(iban_to);
 
                 if (!account_to) {
                     throw new GraphQLError(errorName.RECEIVING_IBAN_NOT_EXISTS);
@@ -295,8 +289,8 @@ const mutationType = new GraphQLObjectType({
                 const transaction = await models.Transaction.create({
                     sum,
                     date: new Date(),
-                    id_account_from: account_from.id,
-                    id_account_to: account_to.id,
+                    iban_from: account_from.iban,
+                    iban_to: account_to.iban,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
@@ -306,7 +300,7 @@ const mutationType = new GraphQLObjectType({
 
                 await account_from.save();
                 await account_to.save();
-
+                
                 return transaction;
             }
         }

@@ -2,11 +2,11 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('Accounts', {
-      id: {
-        allowNull: false,
-        autoIncrement: true,
+      iban: {
         primaryKey: true,
-        type: Sequelize.INTEGER
+        allowNull: false,
+        autoIncrement: false,
+        type: Sequelize.STRING
       },
       userId: {
         type: Sequelize.INTEGER,
@@ -16,9 +16,6 @@ module.exports = {
           },
           key: 'id'
         },
-      },
-      iban: {
-        type: Sequelize.STRING
       },
       balance: {
         type: Sequelize.DOUBLE
