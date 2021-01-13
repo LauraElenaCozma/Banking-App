@@ -1,4 +1,7 @@
 # Banking-App
+* Node.js for server-side
+* Sequelize for database
+* GraphQL
 
 ### Step 0
 
