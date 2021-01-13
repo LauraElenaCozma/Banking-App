@@ -15,6 +15,7 @@ const userType = new GraphQLObjectType({
         createdAt: { type: GraphQLString },
         updatedAt: { type: GraphQLString },
 
+        // get user's address
         address: {
             type: addressType,
             resolve: async (parent) => {
@@ -23,6 +24,7 @@ const userType = new GraphQLObjectType({
             }
         },
 
+        // get user's accounts
         accounts: {
             type: GraphQLList(accountType),
             resolve: async (parent) => {

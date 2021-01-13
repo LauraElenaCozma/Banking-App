@@ -21,12 +21,6 @@ module.exports = {
       iban_to: {
         allowNull: false,
         type: Sequelize.STRING,
-        // references: {
-        //   model: {
-        //     tableName: 'Accounts',
-        //   },
-        //   key: 'iban'
-        // },
       },
       sum: {
         type: Sequelize.FLOAT

@@ -15,7 +15,7 @@ const promotionType = require('./types/promotionType');
 const promotionInputType = require('./inputTypes/promotionInputType.js');
 const transactionType = require('./types/transactionType.js');
 const {getMaxTransaction, getMaxNoAccounts} = require('../utils/transactionUtils');
-const { accountBank, userBank } = require('../utils/bank.js')
+const { accountBank } = require('../utils/bank.js')
 
 
 const mutationType = new GraphQLObjectType({
@@ -154,7 +154,7 @@ const mutationType = new GraphQLObjectType({
         },
 
         addPromotionToUser: {
-            type: promotionType,
+            type: userType,
             args: {
                 promotionId: {
                     type: GraphQLNonNull(GraphQLInt)
@@ -218,21 +218,12 @@ const mutationType = new GraphQLObjectType({
                     updatedAt: new Date()
                 });
                 await account.save();
-
-                //TODO: verifica ce returneaza                
-
-                /*const result = await User.findOne({
-                    where: { userId: userId},
-                    //include: Profile
-                  });
-                  return result;*/
-                return promotion;
+                return user;
             }
-
         },
 
         removePromotionOfUser: {
-            type: promotionType,
+            type: userType,
             args: {
                 promotionId: {
                     type: GraphQLNonNull(GraphQLInt)
@@ -250,7 +241,7 @@ const mutationType = new GraphQLObjectType({
 
                 const { user } = context;
                 await user.removePromotion(promotion);
-                return promotion;
+                return user;
             }
         },
 

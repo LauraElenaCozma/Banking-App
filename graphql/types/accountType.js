@@ -1,8 +1,8 @@
 const { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLFloat, GraphQLBoolean, GraphQLList, GraphQLSchema } = require('graphql');
-const transaction = require('../../models/transaction');
 const transactionType = require('./transactionType');
 const models = require('../../models');
 const { Op } = require('sequelize');
+const moment = require('moment');
 
 const accountType = new GraphQLObjectType({
     name: 'Account',
@@ -54,18 +54,21 @@ const accountType = new GraphQLObjectType({
         },
 
         // get all transactions (send and received money this month)
-        //TODO
         allTransactionsThisMonth: {
             type: GraphQLList(transactionType),
             resolve: async (parent) => {
                 const transactions = await models.Transaction.findAll({
                     where: {
                         [Op.and]: {
-                            [Op.or]: [
-                                { iban_to: parent.iban },
-                                { iban_from: parent.iban }
-                            ],
-                       //     [Op.eq]: { date: new Date().getMonth() + 1 } // e greu sa iei anul si luna din string pt comparare. cred ca stergem asta???
+                                    [Op.or]: 
+                                    [
+                                        { iban_to: parent.iban },
+                                        { iban_from: parent.iban }  
+                                    ],
+                                    date: {
+                                        [Op.gte]: new moment().startOf('month').format("YYYY-DD-MM"),
+                                        [Op.lte]: new moment().endOf("month").format("YYYY-DD-MM"),
+                                    }
                         }
                     },
                     order: ['date'],

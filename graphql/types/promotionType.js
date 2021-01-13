@@ -1,5 +1,4 @@
 const { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLFloat, GraphQl, GraphQLSchema } = require('graphql');
-const userType = require('./userType.js');
 
 const promotionType = new GraphQLObjectType({
     name: 'Promotion',
