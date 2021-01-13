@@ -4,7 +4,6 @@ const promotionType = new GraphQLObjectType({
     name: 'Promotion',
     fields: {
         id: { type: GraphQLInt },
-        userId: { type: GraphQLInt },
         name: { type: GraphQLString },
         price: {type: GraphQLFloat},
         startDate: { type: GraphQLString },
