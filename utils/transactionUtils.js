@@ -24,7 +24,7 @@ async function getMaxNoAccounts(user) {
     let maxNo = 0;
     const promotions = await user.getPromotions();
     promotions.forEach(promotion => {
-        if (promotions.maxNoOfAccounts != null) { //promotion that affects the number of accounts
+        if (promotion.maxNoOfAccounts != null) { //promotion that affects the number of accounts
             if (promotion.endDate == null && maxNo < promotion.maxNoOfAccounts) {
                 maxNo = promotion.maxNoOfAccounts;
             }

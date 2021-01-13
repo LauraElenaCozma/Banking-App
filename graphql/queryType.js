@@ -6,7 +6,7 @@ const transactionType = require('./types/transactionType.js');
 const { errorName } = require('../utils/errors.js');
 const checkUserAuth = require('../utils/authCheck.js');
 const promotionType = require('./types/promotionType.js');
-const getMaxTransaction = require('../utils/transactionUtils.js');
+const {getMaxTransaction, getMaxNoAccounts}  = require('../utils/transactionUtils.js');
 
 const queryType = new GraphQLObjectType({
     name: 'Query',
@@ -71,7 +71,7 @@ const queryType = new GraphQLObjectType({
         getMaxTransaction: {
             type: GraphQLString,
             args: {},
-            resolve: async (_, { }) => {
+            resolve: async (_, { }, context) => {
 
                 const { user } = context;
                 // checks if user is authenticated
@@ -84,7 +84,7 @@ const queryType = new GraphQLObjectType({
         getMaxNoOfAccounts: {
             type: GraphQLString,
             args: {},
-            resolve: async (_, { }) => {
+            resolve: async (_, { }, context) => {
 
                 const { user } = context;
                 // checks if user is authenticated
