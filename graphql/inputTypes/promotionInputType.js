@@ -3,7 +3,6 @@ const { GraphQLInputObjectType, GraphQLString, GraphQLInt, GraphQLFloat } = requ
 const promotionInputType = new GraphQLInputObjectType({
     name: 'PromotionInput',
     fields: {
-        userId: { type: GraphQLInt },
         name: { type: GraphQLString },
         price: {type: GraphQLFloat},
         startDate: { type: GraphQLString },

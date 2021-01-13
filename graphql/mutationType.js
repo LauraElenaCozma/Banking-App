@@ -12,6 +12,7 @@ const checkUserAuth = require('../utils/authCheck.js');
 const generateIban = require('../utils/randomGenerator.js');
 const bcrypt = require('bcrypt');
 const promotionType = require('./types/promotionType');
+const promotionInputType = require('./inputTypes/promotionInputType.js');
 const transactionType = require('./types/transactionType.js');
 const {getMaxTransaction, getMaxNoAccounts} = require('../utils/transactionUtils');
 const { accountBank, userBank } = require('../utils/bank.js')
@@ -212,7 +213,7 @@ const mutationType = new GraphQLObjectType({
                     sum: promotion.price,
                     date: new Date(),
                     iban_from: accountIban,
-                    iban_to: "CONTBANCA999999", //TODO: change
+                    iban_to: "BANKBANKBANK", 
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
@@ -324,6 +325,90 @@ const mutationType = new GraphQLObjectType({
                 await account_to.save();
 
                 return transaction;
+            }
+        },
+
+        editUserDetails: {
+            type: userType,
+            args: {
+                userInput: {
+                    type: GraphQLNonNull(userInputType)
+                },
+                addressInput: {
+                    type: GraphQLNonNull(addressInputType)
+                }
+            },
+            resolve: async (_, { userInput, addressInput }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+                const { user } = context;
+
+                user.firstName = userInput.firstName; 
+                user.lastName = userInput.lastName;
+                user.phone = userInput.phone;
+                user.email = userInput.email;
+                user.password = bcrypt.hashSync(userInput.password, config.SALT_ROUND);
+
+                const address = await user.getAddress();
+                address.street = addressInput.street;
+                address.no = addressInput.no;
+                address.city = addressInput.city;
+                address.country = addressInput.country;
+                await address.save();
+                await user.save();
+
+                return user;
+            }
+        },
+
+        createPromotion: {
+            type: promotionType,
+            args: {
+                promotionInput: {
+                    type: GraphQLNonNull(promotionInputType) }
+            },
+            resolve: async (_, {promotionInput}, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+                const { user } = context;
+
+                //check if the logged user is the bank; only the bank can create a new promotion
+                if(user.email != 'bank@bank.com') {
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+                const promotion = await models.Promotion.create(promotionInput);
+
+                return promotion;
+            }
+        },
+        unblockAccount: {
+            type: accountType,
+            args: {
+                iban: {
+                    type: GraphQLNonNull(GraphQLString)
+                }
+            },
+            resolve: async (_, {iban}, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+                // checks if the account with the given iban exists
+                
+                const account = await models.Account.findByPk(iban);
+                if (!account) {
+                    throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
+                }
+
+                const { user } = context;
+                const accountUser = await account.getUser();
+
+                if (accountUser.id != user.id) {
+                    // account does not belong to this user
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+
+                account.blocked = false;
+                await account.save();
+                return account;
             }
         }
     }
