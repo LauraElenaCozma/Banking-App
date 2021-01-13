@@ -94,6 +94,30 @@ const queryType = new GraphQLObjectType({
             }
         },
 
+        // get all transactions (only the bank can do it)
+        transactions: {
+
+            type: GraphQLList(transactionType),
+            resolve: async (_, { }, context) => {
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                const { user } = context;
+
+                //check if the logged user is the bank; only the bank can get all the transactions
+                if (user.email != 'bank@bank.com') {
+                    throw new GraphQLError(errorName.UNAUTHORIZED);
+                }
+                
+                // ordered by date
+                const transactions = await models.Transaction.findAll({
+                    order: ['date'],
+                });
+                return transactions;
+
+            },
+        },
+
         // get details about a transaction
         transaction: {
             type: transactionType,
@@ -116,7 +140,7 @@ const queryType = new GraphQLObjectType({
 
                 const userFrom = await accountFrom.getUser();
                 const userTo = await accountTo.getUser();
-                
+
                 const { user } = context;
                 if (userFrom.id != user.id && userTo.id != user.id) {
                     // transaction does not belong to this user
@@ -126,6 +150,8 @@ const queryType = new GraphQLObjectType({
                 return transaction;
             }
         },
+
+
     }
 });
 
