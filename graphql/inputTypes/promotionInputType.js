@@ -9,7 +9,7 @@ const promotionInputType = new GraphQLInputObjectType({
         startDate: { type: GraphQLString },
         endDate: { type: GraphQLString },
         maxNoOfAccounts: { type: GraphQLInt },
-        maxSumOfTransactions: { type: GraphQLInt }
+        maxTransaction: { type: GraphQLFloat }
     }
 });
 

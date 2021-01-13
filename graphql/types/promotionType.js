@@ -11,7 +11,7 @@ const promotionType = new GraphQLObjectType({
         startDate: { type: GraphQLString },
         endDate: { type: GraphQLString },
         maxNoOfAccounts: { type: GraphQLInt },
-        maxSumOfTransactions: { type: GraphQLInt },
+        maxTransaction: { type: GraphQLFloat },
         createdAt: { type: GraphQLString },
         updatedAt: { type: GraphQLString },
     }

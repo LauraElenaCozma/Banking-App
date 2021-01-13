@@ -1,7 +1,6 @@
 const { GraphQLObjectType, GraphQLNonNull, GraphQLInt, GraphQLList, GraphQLString, GraphQLError, GraphQLFloat } = require('graphql');
 const models = require('../models');
 const userType = require('./types/userType.js');
-const addressType = require('./types/addressType.js');
 const accountType = require('./types/accountType.js');
 const transactionType = require('./types/transactionType.js');
 const { errorName } = require('../utils/errors.js');
@@ -23,35 +22,6 @@ const queryType = new GraphQLObjectType({
                 const { user } = context;
                 return user;
             },
-        },
-
-        // get address details
-        address: {
-            type: addressType,
-            args: {},
-            resolve: async (_, { }, context) => {
-                // checks if user is authenticated
-                checkUserAuth(context);
-                const { user } = context;
-
-                const address = await user.getAddress();
-                return address;
-            }
-        },
-
-        // gets user accounts
-        accounts: {
-         
-            type: GraphQLList(accountType),
-            args: {},
-            resolve: async (_, { }, context) => {
-                // checks if user is authenticated
-                checkUserAuth(context);
-
-                const { user } = context;
-                const accounts = await user.getAccounts();
-                return accounts;
-            }
         },
 
         // get user account
@@ -87,20 +57,6 @@ const queryType = new GraphQLObjectType({
             }
         },
 
-        // get user promotions
-        getPromotionsOfUser: {
-            type: GraphQLList(promotionType),
-            args: {},
-            resolve: async (_, { }, context) => {
-                // checks if user is authenticated
-                checkUserAuth(context);
-
-                const { user } = context;
-                const promotions = await user.getPromotions();
-                return promotions;
-            }
-        },
-
         // get all the available promotions
         getPromotions: {
             type: GraphQLList(promotionType),
@@ -115,13 +71,26 @@ const queryType = new GraphQLObjectType({
         getMaxTransaction: {
             type: GraphQLString,
             args: {},
-            resolve: async (_, { userId }) => {
+            resolve: async (_, { }) => {
 
                 const { user } = context;
                 // checks if user is authenticated
                 checkUserAuth(context);
 
                 return await getMaxTransaction(user);
+            }
+        },
+        // get the maximum number of accounts that a user can have
+        getMaxNoOfAccounts: {
+            type: GraphQLString,
+            args: {},
+            resolve: async (_, { }) => {
+
+                const { user } = context;
+                // checks if user is authenticated
+                checkUserAuth(context);
+
+                return await getMaxNoAccounts(user);
             }
         },
 
@@ -147,7 +116,8 @@ const queryType = new GraphQLObjectType({
 
                 const userFrom = await accountFrom.getUser();
                 const userTo = await accountTo.getUser();
-
+                
+                const { user } = context;
                 if (userFrom.id != user.id && userTo.id != user.id) {
                     // transaction does not belong to this user
                     throw new GraphQLError(errorName.UNAUTHORIZED);
@@ -156,82 +126,6 @@ const queryType = new GraphQLObjectType({
                 return transaction;
             }
         },
-
-        // same thing as nested query from accountType
-        // transactionsSendMoney: {
-        //     // gets all the transactions for the authenticated user 
-        //     // (the ones he sent money, not received)
-
-        //     type: GraphQLList(transactionType),
-        //     args: {
-        //         iban: {
-        //             type: GraphQLNonNull(GraphQLString)
-        //         },
-        //     },
-        //     resolve: async (_, { iban }, context) => {
-        //         // checks if user is authenticated
-        //         checkUserAuth(context);
-
-        //         // checks if the account with the given iban exists
-        //         const account = await models.Account.findByPk(iban);
-
-        //         if (!account) {
-        //             throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
-        //         }
-
-        //         const { user } = context;
-        //         const accountUser = await account.getUser();
-
-        //         if (accountUser.id != user.id) {
-        //             // account does not belong to this user
-        //             throw new GraphQLError(errorName.UNAUTHORIZED);
-        //         }
-        //         const transactions = await account.getTransactions();
-
-        //         return transactions;
-        //     }
-        // },
-
-        // same thing as nested query from accountType
-        // transactionsReceivedMoney: {
-        //     // gets all the transactions for the authenticated user 
-        //     // (the ones he received money, not sent)
-
-        //     type: GraphQLList(transactionType),
-        //     args: {
-        //         iban: {
-        //             type: GraphQLNonNull(GraphQLString)
-        //         },
-        //     },
-        //     resolve: async (_, { iban }, context) => {
-        //         // checks if user is authenticated
-        //         checkUserAuth(context);
-
-        //         // checks if the account with the given iban exists
-        //         const account = await models.Account.findByPk(iban);
-
-        //         if (!account) {
-        //             throw new GraphQLError(errorName.RESOURCE_NOT_EXISTS);
-        //         }
-
-        //         const { user } = context;
-        //         const accountUser = await account.getUser();
-
-        //         if (accountUser.id != user.id) {
-        //             // account does not belong to this user
-        //             throw new GraphQLError(errorName.UNAUTHORIZED);
-        //         }
-        //         const transactions = await models.Transaction.findAll({
-        //             where: {
-        //                 iban_to: iban
-        //             }
-        //         });
-
-        //         return transactions;
-        //     }
-        // },
-
-        
     }
 });
 

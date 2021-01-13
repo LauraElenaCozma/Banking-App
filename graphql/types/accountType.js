@@ -34,7 +34,7 @@ const accountType = new GraphQLObjectType({
                 return transactions;
             }
         },
-        
+
         // gets all transactions (sent and recevied money)
         allTransactions: {
             type: GraphQLList(transactionType),
@@ -54,7 +54,26 @@ const accountType = new GraphQLObjectType({
         },
 
         // get all transactions (send and received money this month)
+        //TODO
+        allTransactionsThisMonth: {
+            type: GraphQLList(transactionType),
+            resolve: async (parent) => {
+                const transactions = await models.Transaction.findAll({
+                    where: {
+                        [Op.and]: {
+                            [Op.or]: [
+                                { iban_to: parent.iban },
+                                { iban_from: parent.iban }
+                            ],
+                       //     [Op.eq]: { date: new Date().getMonth() + 1 } // e greu sa iei anul si luna din string pt comparare. cred ca stergem asta???
+                        }
+                    },
+                    order: ['date'],
+                });
 
+                return transactions;
+            }
+        },
     }
 });
 

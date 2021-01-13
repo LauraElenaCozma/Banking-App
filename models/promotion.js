@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     startDate: DataTypes.DATEONLY,
     endDate: DataTypes.DATEONLY,
     maxNoOfAccounts: DataTypes.INTEGER,
-    maxSumOfTransactions: DataTypes.INTEGER
+    maxTransaction: DataTypes.FLOAT
   }, {
     sequelize,
     modelName: 'Promotion',

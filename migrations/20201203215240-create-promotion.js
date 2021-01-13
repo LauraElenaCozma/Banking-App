@@ -23,8 +23,8 @@ module.exports = {
       maxNoOfAccounts: {
         type: Sequelize.INTEGER
       },
-      maxSumOfTransactions: {
-        type: Sequelize.INTEGER
+      maxTransaction: {
+        type: Sequelize.FLOAT
       },
       createdAt: {
         allowNull: false,
